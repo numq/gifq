@@ -9,18 +9,26 @@ abstract class Interactor<in T, out R> {
     abstract suspend fun execute(arg: T): R
 
     operator fun invoke(
+        coroutineScope: CoroutineScope,
         arg: T,
         error: (Exception) -> Unit,
         success: (R) -> Unit,
     ) {
-        job = GlobalScope.launch {
-            withContext(Dispatchers.Main) {
-                runCatching { execute(arg) }.onFailure { error(Exception(it)) }.onSuccess(success)
+        job = coroutineScope.launch {
+            runCatching { execute(arg) }.onFailure {
+                withContext(Dispatchers.Main) {
+                    error(Exception(it))
+                }
+            }.onSuccess {
+                withContext(Dispatchers.Main) {
+                    success(it)
+                }
             }
         }
     }
 
     fun cancel() {
         job?.cancel()
+        job = null
     }
 }
