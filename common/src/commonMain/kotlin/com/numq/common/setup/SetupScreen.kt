@@ -14,6 +14,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.numq.common.collector.Collector.collect
 import com.numq.common.format.SizeFormatter
 import com.numq.common.settings.Settings
 import com.numq.common.settings.SettingsColumn
@@ -28,11 +29,11 @@ fun SetupScreen(
     feature: SetupFeature,
     startProcessing: (Settings) -> Unit,
 ) {
-    when (val effect = feature.effect.collectAsState(null).value) {
+    when (val effect = collect(feature.effect)) {
         is SetupEffect.StartProcessing -> startProcessing(effect.settings)
         else -> Unit
     }
-    when (val state = feature.state.collectAsState().value) {
+    when (val state = collect(feature.state)) {
         is SetupState.Empty -> SetupEmpty(upload = {
             feature.dispatch(SetupIntent.UploadFile(it))
         }, cancelUploading = {

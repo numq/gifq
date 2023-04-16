@@ -13,6 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.numq.common.collector.Collector.collect
 import com.numq.common.converter.ConversionStatus
 import com.numq.common.indicator.ProgressIndicator
 import com.numq.common.settings.Settings
@@ -23,11 +24,11 @@ fun ProcessingScreen(
     settings: Settings,
     close: () -> Unit,
 ) {
-    when (feature.effect.collectAsState(null).value) {
+    when (collect(feature.effect)) {
         is ProcessingEffect.Close -> SideEffect { close() }
         else -> Unit
     }
-    when (val state = feature.state.collectAsState().value) {
+    when (val state = collect(feature.state)) {
         is ProcessingState.Loading -> feature.dispatch(ProcessingIntent.Start(settings))
         is ProcessingState.Active -> ProcessingActive(
             Modifier.fillMaxWidth(.5f).height(24.dp),

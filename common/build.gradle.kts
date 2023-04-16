@@ -37,7 +37,8 @@ kotlin {
             dependencies {
                 api("androidx.appcompat:appcompat:1.4.1")
                 api("androidx.core:core-ktx:1.7.0")
-                implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.4.0")
+                implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.1")
+                implementation("androidx.lifecycle:lifecycle-runtime-compose:2.6.1")
             }
         }
         val androidTest by getting {
