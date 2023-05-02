@@ -17,11 +17,11 @@ dependencies {
 }
 
 android {
-    compileSdkVersion(31)
+    compileSdkVersion(33)
     defaultConfig {
         applicationId = "com.numq.android"
         minSdkVersion(24)
-        targetSdkVersion(31)
+        targetSdkVersion(33)
         versionCode = 1
         versionName = "1.0"
     }
@@ -33,5 +33,9 @@ android {
         getByName("release") {
             isMinifyEnabled = false
         }
+    }
+    packagingOptions {
+        exclude("META-INF/{AL2.0,LGPL2.1}")
+        exclude("META-INF/native-image/**")
     }
 }
