@@ -9,5 +9,5 @@ expect object Collector {
     fun <T> collect(flow: StateFlow<T>): T
 
     @Composable
-    fun <T> collect(flow: Flow<T>, initial: T? = null): T?
+    fun <T> collect(flow: Flow<T>, initialValue: T? = null): T?
 }
