@@ -8,6 +8,8 @@ import androidx.compose.ui.awt.ComposeWindow
 import java.awt.FileDialog
 
 actual class UploadDialog {
+    private val maxFileSize = 100 * 1024 * 1024
+
     @Composable
     actual fun show(status: (UploadStatus) -> Unit) {
         val (visible, setVisible) = remember { mutableStateOf(true) }
@@ -25,15 +27,15 @@ actual class UploadDialog {
             ) {
                 try {
                     files?.firstOrNull()?.run {
-                        status(UploadStatus.Uploaded(UploadedFile(
+                        if (length() > maxFileSize) status(UploadStatus.Error(UploadException.InvalidFileSize))
+                        else status(UploadStatus.Uploaded(UploadedFile(
                             path,
                             nameWithoutExtension,
-                            path.split(nameWithoutExtension).first(),
-                            length()
+                            path.split(nameWithoutExtension).first()
                         )))
                     } ?: status(UploadStatus.Closed)
                 } catch (e: Exception) {
-                    println("Upload dialog exception: ${e.localizedMessage}")
+                    status(UploadStatus.Error(e))
                 } finally {
                     setVisible(false)
                 }
