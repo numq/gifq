@@ -10,5 +10,5 @@ actual object Collector {
     actual fun <T> collect(flow: StateFlow<T>): T = flow.collectAsState().value
 
     @Composable
-    actual fun <T> collect(flow: Flow<T>, initial: T?): T? = flow.collectAsState(initial).value
+    actual fun <T> collect(flow: Flow<T>, initialValue: T?): T? = flow.collectAsState(initialValue).value
 }
