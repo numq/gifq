@@ -1,3 +1,3 @@
 package com.numq.common.upload
 
-data class UploadedFile(val url: String, val name: String, val path: String, val size: Long)
+data class UploadedFile(val url: String, val name: String, val path: String)
