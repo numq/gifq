@@ -18,6 +18,11 @@ class SetupFeature constructor(
         updateState: (SetupState) -> Unit,
         emitEffect: (SetupEffect) -> Unit,
     ) = when (intent) {
+        is SetupIntent.UploadError -> {
+            fileUploading?.cancel()
+            fileUploading = null
+            updateState(SetupState.Error(intent.exception))
+        }
         is SetupIntent.UploadFile -> fileUploading = getSettings.apply {
             invoke(coroutineScope, intent.file, error = {
                 updateState(SetupState.Error(it))

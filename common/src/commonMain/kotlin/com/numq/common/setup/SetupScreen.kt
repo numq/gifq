@@ -18,8 +18,10 @@ import com.numq.common.collector.Collector.collect
 import com.numq.common.format.SizeFormatter
 import com.numq.common.settings.Settings
 import com.numq.common.settings.SettingsColumn
+import com.numq.common.settings.SettingsException
 import com.numq.common.settings.SettingsRow
 import com.numq.common.upload.UploadDialog
+import com.numq.common.upload.UploadException
 import com.numq.common.upload.UploadStatus
 import com.numq.common.upload.UploadedFile
 import kotlinx.coroutines.delay
@@ -34,11 +36,16 @@ fun SetupScreen(
         else -> Unit
     }
     when (val state = collect(feature.state)) {
-        is SetupState.Empty -> SetupEmpty(upload = {
-            feature.dispatch(SetupIntent.UploadFile(it))
-        }, cancelUploading = {
-            feature.dispatch(SetupIntent.CancelUploading)
-        })
+        is SetupState.Empty -> SetupEmpty(
+            upload = {
+                feature.dispatch(SetupIntent.UploadFile(it))
+            },
+            error = {
+                feature.dispatch(SetupIntent.UploadError(it))
+            },
+            cancel = {
+                feature.dispatch(SetupIntent.CancelUploading)
+            })
         is SetupState.Uploaded -> SetupUploaded(
             state.settings,
             state.size,
@@ -53,13 +60,13 @@ fun SetupScreen(
             }
         )
         is SetupState.Error -> SetupError(state.exception) {
-            feature.dispatch(SetupIntent.Error(state.exception))
+            feature.dispatch(SetupIntent.Reset)
         }
     }
 }
 
 @Composable
-private fun SetupEmpty(upload: (UploadedFile) -> Unit, cancelUploading: () -> Unit) {
+private fun SetupEmpty(upload: (UploadedFile) -> Unit, error: (Exception) -> Unit, cancel: () -> Unit) {
 
     val uploadDialog = remember { UploadDialog() }
 
@@ -70,33 +77,19 @@ private fun SetupEmpty(upload: (UploadedFile) -> Unit, cancelUploading: () -> Un
             CircularProgressIndicator()
             uploadDialog.show(setStatus)
         }
+        is UploadStatus.Error -> error(status.exception)
         is UploadStatus.Uploaded -> {
-            val cancel = {
-                cancelUploading()
+            val cancelAndClose = {
+                cancel()
                 setStatus(UploadStatus.Closed)
             }
+            LaunchedEffect(Unit) { upload(status.file) }
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically)
             ) {
                 CircularProgressIndicator()
-                if (status.file.size / (1024 * 1024) > 100) Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically)
-                ) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("File is larger than 100MB", color = Color.Red)
-                        IconButton(onClick = {
-                            upload(status.file)
-                        }) {
-                            Icon(Icons.Rounded.Done, "ok")
-                        }
-                    }
-                } else LaunchedEffect(Unit) { upload(status.file) }
-                Button(onClick = cancel) {
+                Button(onClick = cancelAndClose) {
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                         verticalAlignment = Alignment.CenterVertically
@@ -147,13 +140,43 @@ private fun SetupUploaded(
         derivedStateOf {
             initialSettings.copy(
                 fileName = name.takeIf { it.isNotBlank() } ?: initialSettings.fileName,
-                width = width.toIntOrNull()
-                    ?.coerceIn(Settings.minWidth, Settings.maxWidth) ?: initialSettings.width,
-                height = height.toIntOrNull()
-                    ?.coerceIn(Settings.minHeight, Settings.maxHeight) ?: initialSettings.height,
+                width = width.toIntOrNull()?.takeIf { it in Settings.minWidth..Settings.maxWidth }
+                    ?: initialSettings.width,
+                height = height.toIntOrNull()?.takeIf { it in Settings.minHeight..Settings.maxHeight }
+                    ?: initialSettings.height,
                 fps = frameRate.toDoubleOrNull()?.coerceIn(Settings.minFPS, Settings.maxFPS) ?: initialSettings.fps,
                 repeat = repeat,
                 quality = quality.coerceIn(Settings.minQuality, Settings.maxQuality))
+        }
+    }
+
+    val (widthChanged, setWidthChanged) = remember { mutableStateOf(false) }
+
+    val (heightChanged, setHeightChanged) = remember { mutableStateOf(false) }
+
+    val (frameRateChanged, setFrameRateChanged) = remember { mutableStateOf(false) }
+
+    LaunchedEffect(width) { if (!widthChanged) setWidthChanged(true) }
+
+    LaunchedEffect(width) { if (!heightChanged) setHeightChanged(true) }
+
+    LaunchedEffect(width) { if (!frameRateChanged) setFrameRateChanged(true) }
+
+    val invalidWidth by remember(width) {
+        derivedStateOf {
+            widthChanged && width.toIntOrNull()?.let { it !in Settings.minWidth..Settings.maxWidth } ?: true
+        }
+    }
+
+    val invalidHeight by remember(height) {
+        derivedStateOf {
+            heightChanged && height.toIntOrNull()?.let { it !in Settings.minHeight..Settings.maxHeight } ?: true
+        }
+    }
+
+    val invalidFrameRate by remember(frameRate) {
+        derivedStateOf {
+            frameRateChanged && frameRate.toDoubleOrNull()?.let { it !in Settings.minFPS..Settings.maxFPS } ?: true
         }
     }
 
@@ -180,6 +203,7 @@ private fun SetupUploaded(
                     },
                     value = width,
                     onValueChange = setWidth,
+                    isError = invalidWidth,
                     label = { Text("Width") },
                     trailingIcon = { if (widthFocused) Text("px") },
                     placeholder = { Text(settings.width.toString()) },
@@ -195,6 +219,7 @@ private fun SetupUploaded(
                     },
                     value = height,
                     onValueChange = setHeight,
+                    isError = invalidHeight,
                     label = { Text("Height") },
                     trailingIcon = { if (heightFocused) Text("px") },
                     placeholder = { Text(settings.height.toString()) },
@@ -207,7 +232,11 @@ private fun SetupUploaded(
                 OutlinedTextField(
                     modifier = Modifier,
                     value = frameRate,
-                    onValueChange = setFrameRate,
+                    onValueChange = {
+                        if (it.isBlank()) setFrameRate("${initialSettings.fps}")
+                        setFrameRate(it)
+                    },
+                    isError = invalidFrameRate,
                     label = { Text("FPS") },
                     placeholder = { Text(settings.fps.toString()) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -223,16 +252,17 @@ private fun SetupUploaded(
             }
         }
         SettingsColumn {
-            Text(text = when (quality) {
-                in (Settings.minQuality..Settings.midQuality - 1) -> "Low quality, small size"
-                in (Settings.midQuality + 1..Settings.maxQuality) -> "High quality, large size"
-                else -> "Medium quality, normal size"
+            Text(text = when (quality.toInt().toFloat()) {
+                Settings.minQuality -> "Low quality, small size"
+                Settings.midQuality -> "Medium quality, normal size"
+                Settings.maxQuality -> "High quality, large size"
+                else -> "${quality.toInt()}%"
             })
             Slider(
                 value = quality,
                 onValueChange = { setQuality(it) },
                 valueRange = Settings.minQuality..Settings.maxQuality,
-                steps = 1,
+                steps = Settings.maxQuality.toInt(),
                 modifier = Modifier.fillMaxWidth()
             )
         }
@@ -278,6 +308,7 @@ private fun SetupUploaded(
 
 @Composable
 private fun SetupError(exception: Exception, close: () -> Unit) {
+    val default = "Try to upload another file."
     Column(
         Modifier.fillMaxWidth(.5f),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -290,7 +321,11 @@ private fun SetupError(exception: Exception, close: () -> Unit) {
             Text("ERROR", color = Color.Red)
             Icon(Icons.Rounded.ErrorOutline, "processing error", tint = Color.Red)
         }
-        Text(exception.localizedMessage)
+        Text(when (exception.cause ?: exception) {
+            is UploadException.InvalidFileSize, is SettingsException.InvalidFormat -> exception.message ?: default
+            else -> default
+        })
+        Text(exception.toString())
         Button(onClick = { close() }) {
             Text("Close")
         }
