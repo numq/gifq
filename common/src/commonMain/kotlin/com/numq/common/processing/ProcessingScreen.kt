@@ -5,7 +5,9 @@ import androidx.compose.material.Button
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.*
+import androidx.compose.material.icons.rounded.ArrowForward
+import androidx.compose.material.icons.rounded.Cancel
+import androidx.compose.material.icons.rounded.ErrorOutline
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
@@ -15,6 +17,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.numq.common.collector.Collector.collect
 import com.numq.common.converter.ConversionStatus
+import com.numq.common.encoder.EncoderException
 import com.numq.common.indicator.ProgressIndicator
 import com.numq.common.settings.Settings
 
@@ -33,6 +36,7 @@ fun ProcessingScreen(
         is ProcessingState.Active -> ProcessingActive(
             Modifier.fillMaxWidth(.5f).height(24.dp),
             state.status.collectAsState(ConversionStatus.Progress()).value,
+            error = { feature.dispatch(ProcessingIntent.Error(it)) },
             cancel = { feature.dispatch(ProcessingIntent.Close) },
             complete = { feature.dispatch(ProcessingIntent.Complete(it)) }
         )
@@ -47,6 +51,7 @@ fun ProcessingScreen(
 private fun ProcessingActive(
     modifier: Modifier,
     status: ConversionStatus,
+    error: (Exception) -> Unit,
     cancel: () -> Unit,
     complete: (String) -> Unit,
 ) {
@@ -68,19 +73,7 @@ private fun ProcessingActive(
                 }
             }
             is ConversionStatus.Result -> SideEffect { complete(status.path) }
-            is ConversionStatus.Error -> {
-                Icon(Icons.Rounded.Error, "error")
-                Text(status.exception.localizedMessage)
-                Button(onClick = cancel) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(Icons.Rounded.ArrowBack, "exit")
-                        Text("Load next")
-                    }
-                }
-            }
+            is ConversionStatus.Error -> SideEffect { error(status.exception) }
         }
     }
 }
@@ -104,6 +97,7 @@ private fun ProcessingCompleted(path: String, close: () -> Unit) {
 
 @Composable
 private fun ProcessingError(exception: Exception, close: () -> Unit) {
+    val default = "Something went wrong. Try again with different settings or file."
     Column(
         Modifier.fillMaxWidth(.5f), horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp, alignment = Alignment.CenterVertically)
@@ -115,7 +109,10 @@ private fun ProcessingError(exception: Exception, close: () -> Unit) {
             Text("ERROR", color = Color.Red)
             Icon(Icons.Rounded.ErrorOutline, "processing error", tint = Color.Red)
         }
-        Text(exception.localizedMessage)
+        Text(when (exception.cause ?: exception) {
+            is EncoderException.Default, is ProcessingException.UnableToComplete -> exception.message ?: default
+            else -> default
+        })
         Button(onClick = close) {
             Button(onClick = { close() }) {
                 Text("Close")
