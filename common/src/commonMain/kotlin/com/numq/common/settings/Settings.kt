@@ -1,6 +1,6 @@
 package com.numq.common.settings
 
-data class Settings constructor(
+data class Settings(
     val fileUrl: String,
     val fileName: String,
     val filePath: String,

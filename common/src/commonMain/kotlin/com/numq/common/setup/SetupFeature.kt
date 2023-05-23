@@ -4,7 +4,7 @@ import com.numq.common.converter.CalculateSize
 import com.numq.common.mvi.Feature
 import com.numq.common.settings.GetSettings
 
-class SetupFeature constructor(
+class SetupFeature(
     private val getSettings: GetSettings,
     private val calculateSize: CalculateSize,
 ) : Feature<SetupState, SetupIntent, SetupEffect>(SetupState.Empty) {
@@ -48,7 +48,6 @@ class SetupFeature constructor(
                     updateState(SetupState.Uploaded(intent.settings, it))
                 })
             }
-            sizeCalculation = null
         }
         is SetupIntent.StartProcessing -> {
             updateState(SetupState.Empty)

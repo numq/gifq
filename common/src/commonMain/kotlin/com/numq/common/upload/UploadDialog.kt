@@ -1,5 +1,5 @@
 package com.numq.common.upload
 
-expect class UploadDialog constructor() {
+expect class UploadDialog() {
     fun show(status: (UploadStatus) -> Unit)
 }

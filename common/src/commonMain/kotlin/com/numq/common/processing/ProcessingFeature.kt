@@ -3,7 +3,7 @@ package com.numq.common.processing
 import com.numq.common.converter.ConvertMovieToGif
 import com.numq.common.mvi.Feature
 
-class ProcessingFeature constructor(
+class ProcessingFeature(
     private val convertMovieToGif: ConvertMovieToGif,
 ) : Feature<ProcessingState, ProcessingIntent, ProcessingEffect>(ProcessingState.Loading) {
 
