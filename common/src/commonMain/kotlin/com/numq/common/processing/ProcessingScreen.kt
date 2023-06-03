@@ -40,6 +40,7 @@ fun ProcessingScreen(
             cancel = { feature.dispatch(ProcessingIntent.Close) },
             complete = { feature.dispatch(ProcessingIntent.Complete(it)) }
         )
+
         is ProcessingState.Result -> ProcessingCompleted(state.path, close)
         is ProcessingState.Error -> ProcessingError(state.exception) {
             feature.dispatch(ProcessingIntent.Close)
@@ -72,6 +73,7 @@ private fun ProcessingActive(
                     }
                 }
             }
+
             is ConversionStatus.Result -> SideEffect { complete(status.path) }
             is ConversionStatus.Error -> SideEffect { error(status.exception) }
         }
@@ -86,8 +88,10 @@ private fun ProcessingCompleted(path: String, close: () -> Unit) {
     ) {
         Text(path)
         Button(onClick = close) {
-            Row(horizontalArrangement = Arrangement.spacedBy(4.dp),
-                verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Text("Upload next")
                 Icon(Icons.Rounded.ArrowForward, "exit")
             }
@@ -109,14 +113,14 @@ private fun ProcessingError(exception: Exception, close: () -> Unit) {
             Text("ERROR", color = Color.Red)
             Icon(Icons.Rounded.ErrorOutline, "processing error", tint = Color.Red)
         }
-        Text(when (exception.cause ?: exception) {
-            is EncoderException.Default, is ProcessingException.UnableToComplete -> exception.message ?: default
-            else -> default
-        })
-        Button(onClick = close) {
-            Button(onClick = { close() }) {
-                Text("Close")
+        Text(
+            when (exception.cause ?: exception) {
+                is EncoderException.Default, is ProcessingException.UnableToComplete -> exception.message ?: default
+                else -> default
             }
+        )
+        Button(onClick = close) {
+            Text("Close")
         }
     }
 }
