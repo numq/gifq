@@ -1,11 +1,11 @@
 plugins {
-    id("org.jetbrains.compose") version "1.1.0"
+    id("org.jetbrains.compose")
     id("com.android.application")
     kotlin("android")
 }
 
 group = "com.numq"
-version = "1.0"
+version = "1.0.0"
 
 repositories {
     jcenter()
@@ -13,17 +13,17 @@ repositories {
 
 dependencies {
     implementation(project(":common"))
-    implementation("androidx.activity:activity-compose:1.4.0")
+    implementation("androidx.activity:activity-compose:1.5.0")
 }
 
 android {
     compileSdkVersion(33)
     defaultConfig {
-        applicationId = "com.numq.android"
+        applicationId = "com.numq.gifq"
         minSdkVersion(24)
         targetSdkVersion(33)
         versionCode = 1
-        versionName = "1.0"
+        versionName = "1.0.0"
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
@@ -33,9 +33,5 @@ android {
         getByName("release") {
             isMinifyEnabled = false
         }
-    }
-    packagingOptions {
-        exclude("META-INF/{AL2.0,LGPL2.1}")
-        exclude("META-INF/native-image/**")
     }
 }

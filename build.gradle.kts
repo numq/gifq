@@ -1,23 +1,20 @@
-buildscript {
-    repositories {
-        gradlePluginPortal()
-        jcenter()
-        google()
-        mavenCentral()
-    }
-    dependencies {
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.6.10")
-        classpath("com.android.tools.build:gradle:4.2.2")
-    }
-}
-
 group = "com.numq"
-version = "1.0"
+version = "1.0.0"
 
 allprojects {
     repositories {
         google()
         mavenCentral()
         maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
+        maven("https://www.beatunes.com/repo/maven2/")
+        maven("https://nexus.bedatadriven.com/content/groups/public/")
     }
+}
+
+plugins {
+    kotlin("multiplatform") apply false
+    kotlin("android") apply false
+    id("com.android.application") apply false
+    id("com.android.library") apply false
+    id("org.jetbrains.compose") apply false
 }
