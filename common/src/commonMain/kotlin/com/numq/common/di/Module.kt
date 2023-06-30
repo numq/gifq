@@ -1,7 +1,7 @@
 package com.numq.common.di
 
 import com.numq.common.converter.CalculateSize
-import com.numq.common.converter.ConvertMovieToGif
+import com.numq.common.converter.ConvertVideoToGif
 import com.numq.common.converter.ConverterService
 import com.numq.common.navigation.NavigationViewModel
 import com.numq.common.processing.ProcessingFeature
@@ -14,7 +14,7 @@ import org.koin.dsl.module
 val converterService = module {
     single { ConverterService.Implementation() } bind ConverterService::class
     factory { CalculateSize(get()) }
-    factory { ConvertMovieToGif(get()) }
+    factory { ConvertVideoToGif(get()) }
 }
 
 val settings = module {

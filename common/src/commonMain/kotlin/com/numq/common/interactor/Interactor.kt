@@ -16,11 +16,11 @@ abstract class Interactor<in T, out R> {
     ) {
         job = coroutineScope.launch {
             runCatching { execute(arg) }.onFailure {
-                withContext(Dispatchers.Main) {
+                withContext(Dispatchers.Default) {
                     error(Exception(it))
                 }
             }.onSuccess {
-                withContext(Dispatchers.Main) {
+                withContext(Dispatchers.Default) {
                     success(it)
                 }
             }

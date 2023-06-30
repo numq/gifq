@@ -17,7 +17,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.numq.common.collector.Collector.collect
 import com.numq.common.converter.ConversionStatus
-import com.numq.common.encoder.EncoderException
+import com.numq.common.converter.ConverterException
 import com.numq.common.indicator.ProgressIndicator
 import com.numq.common.settings.Settings
 
@@ -115,7 +115,9 @@ private fun ProcessingError(exception: Exception, close: () -> Unit) {
         }
         Text(
             when (exception.cause ?: exception) {
-                is EncoderException.Default, is ProcessingException.UnableToComplete -> exception.message ?: default
+                is ConverterException.UnableToProcessFrame, ConverterException.UnableToComplete -> exception.message
+                    ?: default
+
                 else -> default
             }
         )

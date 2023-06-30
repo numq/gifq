@@ -36,29 +36,22 @@ fun SetupScreen(
         else -> Unit
     }
     when (val state = collect(feature.state)) {
-        is SetupState.Empty -> SetupEmpty(
-            upload = {
-                feature.dispatch(SetupIntent.UploadFile(it))
-            },
-            error = {
-                feature.dispatch(SetupIntent.UploadError(it))
-            },
-            cancel = {
-                feature.dispatch(SetupIntent.CancelUploading)
-            })
-        is SetupState.Uploaded -> SetupUploaded(
-            state.settings,
-            state.size,
-            calculateSize = {
-                feature.dispatch(SetupIntent.UpdateSettings(it))
-            },
-            convert = {
-                feature.dispatch(SetupIntent.StartProcessing(it))
-            },
-            cancel = {
-                feature.dispatch(SetupIntent.Reset)
-            }
-        )
+        is SetupState.Empty -> SetupEmpty(upload = {
+            feature.dispatch(SetupIntent.UploadFile(it))
+        }, error = {
+            feature.dispatch(SetupIntent.UploadError(it))
+        }, cancel = {
+            feature.dispatch(SetupIntent.CancelUploading)
+        })
+
+        is SetupState.Uploaded -> SetupUploaded(state.settings, state.size, calculateSize = {
+            feature.dispatch(SetupIntent.UpdateSettings(it))
+        }, convert = {
+            feature.dispatch(SetupIntent.StartProcessing(it))
+        }, cancel = {
+            feature.dispatch(SetupIntent.Reset)
+        })
+
         is SetupState.Error -> SetupError(state.exception) {
             feature.dispatch(SetupIntent.Reset)
         }
@@ -77,6 +70,7 @@ private fun SetupEmpty(upload: (UploadedFile) -> Unit, error: (Exception) -> Uni
             CircularProgressIndicator()
             uploadDialog.show(setStatus)
         }
+
         is UploadStatus.Error -> error(status.exception)
         is UploadStatus.Uploaded -> {
             val cancelAndClose = {
@@ -100,6 +94,7 @@ private fun SetupEmpty(upload: (UploadedFile) -> Unit, error: (Exception) -> Uni
                 }
             }
         }
+
         is UploadStatus.Closed -> Button(onClick = { setStatus(UploadStatus.Opened) }) {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally),
@@ -134,19 +129,18 @@ private fun SetupUploaded(
 
     val (repeat, setRepeat) = remember { mutableStateOf(initialSettings.repeat) }
 
-    val (quality, setQuality) = remember { mutableStateOf(initialSettings.quality) }
+    val (qualityLevel, setQualityLevel) = remember { mutableStateOf(initialSettings.qualityLevel) }
 
-    val settings by remember(name, width, height, frameRate, repeat, quality) {
+    val settings by remember(name, width, height, frameRate, repeat, qualityLevel) {
         derivedStateOf {
-            initialSettings.copy(
-                fileName = name.takeIf { it.isNotBlank() } ?: initialSettings.fileName,
+            initialSettings.copy(fileChangedName = name.takeIf { it.isNotBlank() },
                 width = width.toIntOrNull()?.takeIf { it in Settings.minWidth..Settings.maxWidth }
                     ?: initialSettings.width,
                 height = height.toIntOrNull()?.takeIf { it in Settings.minHeight..Settings.maxHeight }
                     ?: initialSettings.height,
                 fps = frameRate.toDoubleOrNull()?.coerceIn(Settings.minFPS, Settings.maxFPS) ?: initialSettings.fps,
                 repeat = repeat,
-                quality = quality.coerceIn(Settings.minQuality, Settings.maxQuality))
+                qualityLevel = qualityLevel.coerceIn(Settings.minQuality, Settings.maxQuality))
         }
     }
 
@@ -252,15 +246,17 @@ private fun SetupUploaded(
             }
         }
         SettingsColumn {
-            Text(text = when (quality.toInt().toFloat()) {
-                Settings.minQuality -> "Low quality, small size"
-                Settings.midQuality -> "Medium quality, normal size"
-                Settings.maxQuality -> "High quality, large size"
-                else -> "${quality.toInt()}%"
-            })
+            Text(
+                text = when (qualityLevel.toInt().toFloat()) {
+                    Settings.minQuality -> "Low quality"
+                    Settings.midQuality -> "Medium quality"
+                    Settings.maxQuality -> "High quality"
+                    else -> "${qualityLevel.toInt()}%"
+                }
+            )
             Slider(
-                value = quality,
-                onValueChange = { setQuality(it) },
+                value = qualityLevel,
+                onValueChange = setQualityLevel,
                 valueRange = Settings.minQuality..Settings.maxQuality,
                 steps = Settings.maxQuality.toInt(),
                 modifier = Modifier.fillMaxWidth()
@@ -272,7 +268,7 @@ private fun SetupUploaded(
             onValueChange = setName,
             label = { Text("Output name") },
             trailingIcon = { if (nameFocused) Text(".gif") },
-            placeholder = { Text(settings.fileName) },
+            placeholder = { Text(settings.fileChangedName ?: settings.fileInitialName) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             singleLine = true
         )
@@ -280,11 +276,8 @@ private fun SetupUploaded(
         else {
             val calculationTransition = rememberInfiniteTransition()
             val calculationAnimation by calculationTransition.animateFloat(
-                initialValue = 1f,
-                targetValue = 4f,
-                animationSpec = infiniteRepeatable(
-                    animation = tween(1000),
-                    repeatMode = RepeatMode.Restart
+                initialValue = 1f, targetValue = 4f, animationSpec = infiniteRepeatable(
+                    animation = tween(1000), repeatMode = RepeatMode.Restart
                 )
             )
             Text("Calculating size${".".repeat(calculationAnimation.toInt())}")
@@ -315,17 +308,17 @@ private fun SetupError(exception: Exception, close: () -> Unit) {
         verticalArrangement = Arrangement.spacedBy(4.dp, alignment = Alignment.CenterVertically)
     ) {
         Row(
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-            verticalAlignment = Alignment.CenterVertically
+            horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically
         ) {
             Text("ERROR", color = Color.Red)
             Icon(Icons.Rounded.ErrorOutline, "processing error", tint = Color.Red)
         }
-        Text(when (exception.cause ?: exception) {
-            is UploadException.InvalidFileSize, is SettingsException.InvalidFormat -> exception.message ?: default
-            else -> default
-        })
-        Text(exception.toString())
+        Text(
+            when (exception.cause ?: exception) {
+                is UploadException.InvalidFileSize, is SettingsException.InvalidFormat -> exception.message ?: default
+                else -> default
+            }
+        )
         Button(onClick = { close() }) {
             Text("Close")
         }

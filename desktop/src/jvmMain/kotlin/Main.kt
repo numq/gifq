@@ -1,9 +1,6 @@
-import androidx.compose.material.MaterialTheme
 import androidx.compose.ui.window.singleWindowApplication
-import com.numq.common.application.Application
+import com.numq.common.application.MultiplatformApplication
 
 fun main() = singleWindowApplication {
-    MaterialTheme {
-        Application()
-    }
+    MultiplatformApplication()
 }

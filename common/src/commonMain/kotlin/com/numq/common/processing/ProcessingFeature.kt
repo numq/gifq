@@ -1,13 +1,13 @@
 package com.numq.common.processing
 
-import com.numq.common.converter.ConvertMovieToGif
+import com.numq.common.converter.ConvertVideoToGif
 import com.numq.common.mvi.Feature
 
 class ProcessingFeature(
-    private val convertMovieToGif: ConvertMovieToGif,
+    private val convertVideoToGif: ConvertVideoToGif,
 ) : Feature<ProcessingState, ProcessingIntent, ProcessingEffect>(ProcessingState.Loading) {
 
-    private var fileConversion: ConvertMovieToGif? = null
+    private var fileConversion: ConvertVideoToGif? = null
 
     override fun reduce(
         state: ProcessingState,
@@ -16,7 +16,8 @@ class ProcessingFeature(
         emitEffect: (ProcessingEffect) -> Unit,
     ) = when (intent) {
         is ProcessingIntent.Start -> {
-            fileConversion = convertMovieToGif.apply {
+            fileConversion?.cancel()
+            fileConversion = convertVideoToGif.apply {
                 invoke(coroutineScope, intent.settings, error = {
                     updateState(ProcessingState.Error(it))
                 }, success = {

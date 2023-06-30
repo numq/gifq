@@ -24,7 +24,8 @@ interface SettingsService {
                     it.start()
                     val settings = Settings(
                         fileUrl = url,
-                        fileName = name,
+                        fileInitialName = name,
+                        fileChangedName = null,
                         filePath = path,
                         width = it.imageWidth,
                         height = it.imageHeight,

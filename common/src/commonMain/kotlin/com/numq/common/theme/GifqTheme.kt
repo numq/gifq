@@ -29,7 +29,7 @@ private val DarkColors = darkColors(
 )
 
 @Composable
-fun GifqTheme(
+fun ApplicationTheme(
     darkTheme: Boolean = false,
     content: @Composable () -> Unit,
 ) {

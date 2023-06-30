@@ -19,26 +19,31 @@ class SetupFeature(
         emitEffect: (SetupEffect) -> Unit,
     ) = when (intent) {
         is SetupIntent.UploadError -> {
-            fileUploading?.cancel()
-            fileUploading = null
+            clearUploading()
             updateState(SetupState.Error(intent.exception))
         }
+
         is SetupIntent.UploadFile -> fileUploading = getSettings.apply {
             invoke(coroutineScope, intent.file, error = {
                 updateState(SetupState.Error(it))
             }, success = {
-                updateState(SetupState.Uploaded(it.copy(
-                    fileUrl = intent.file.url,
-                    fileName = intent.file.name,
-                    filePath = intent.file.path
-                )))
+                updateState(
+                    SetupState.Uploaded(
+                        it.copy(
+                            fileUrl = intent.file.url,
+                            fileInitialName = intent.file.name,
+                            filePath = intent.file.path
+                        )
+                    )
+                )
             })
         }
+
         is SetupIntent.CancelUploading -> {
-            fileUploading?.cancel()
-            fileUploading = null
+            clearUploading()
             updateState(SetupState.Empty)
         }
+
         is SetupIntent.UpdateSettings -> {
             sizeCalculation?.cancel()
             sizeCalculation = calculateSize.apply {
@@ -49,15 +54,26 @@ class SetupFeature(
                 })
             }
         }
+
         is SetupIntent.StartProcessing -> {
             updateState(SetupState.Empty)
             emitEffect(SetupEffect.StartProcessing(intent.settings))
         }
+
         is SetupIntent.Error -> updateState(SetupState.Error(intent.exception))
         is SetupIntent.Reset -> {
-            sizeCalculation?.cancel()
-            sizeCalculation = null
+            clearCalculation()
             updateState(SetupState.Empty)
         }
+    }
+
+    private fun clearUploading() {
+        fileUploading?.cancel()
+        fileUploading = null
+    }
+
+    private fun clearCalculation() {
+        sizeCalculation?.cancel()
+        sizeCalculation = null
     }
 }
