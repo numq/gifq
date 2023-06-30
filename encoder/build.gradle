@@ -1,0 +1,40 @@
+plugins {
+    id 'java'
+}
+
+group = 'com.numq'
+version = '1.0.0'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation("org.bytedeco:javacv:1.5.8") {
+        exclude module: "artoolkitplus"
+        exclude module: "openblas"
+        exclude module: "opencv"
+        exclude module: "flandmark"
+        exclude module: "flycapture"
+        exclude module: "leptonica"
+        exclude module: "libdc1394"
+        exclude module: "libfreenect"
+        exclude module: "libfreenect2"
+        exclude module: "librealsense"
+        exclude module: "librealsense2"
+        exclude module: "tesseract"
+        exclude module: "videoinput"
+        exclude module: "hamcrest-core"
+    }
+    testImplementation platform('org.junit:junit-bom:5.9.1')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
