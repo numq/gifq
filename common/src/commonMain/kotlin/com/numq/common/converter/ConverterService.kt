@@ -15,6 +15,7 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.FileOutputStream
+import java.nio.ByteBuffer
 
 
 interface ConverterService {
@@ -58,9 +59,19 @@ interface ConverterService {
                             setQuality(scaleQuality(qualityLevel))
                             setRepeat(if (repeat) 0 else 1)
 
-                            grabber.grabImage()?.let(::addFrame)?.let { success ->
-                                if (!success) throw ConverterException.UnableToProcessFrame
-                            }
+                            grabber.grabImage()
+                                ?.run {
+                                    addFrame(
+                                        image.firstOrNull() as? ByteBuffer,
+                                        imageWidth,
+                                        imageHeight,
+                                        imageChannels,
+                                        imageStride
+                                    )
+                                }
+                                ?.let { success ->
+                                    if (!success) throw ConverterException.UnableToProcessFrame
+                                }
 
                             finish()
                         }
@@ -102,9 +113,19 @@ interface ConverterService {
 
                                     var frameNumber = 0
                                     while (isActive) {
-                                        grabber.grabImage()?.let(::addFrame)?.let { success ->
-                                            if (!success) throw ConverterException.UnableToComplete
-                                        } ?: break
+                                        grabber.grabImage()
+                                            ?.run {
+                                                addFrame(
+                                                    image.firstOrNull() as? ByteBuffer,
+                                                    imageWidth,
+                                                    imageHeight,
+                                                    imageChannels,
+                                                    imageStride
+                                                )
+                                            }
+                                            ?.let { success ->
+                                                if (!success) throw ConverterException.UnableToComplete
+                                            } ?: break
                                         send(ConversionStatus.Progress(((frameNumber) * 100f) / grabber.lengthInVideoFrames))
                                         frameNumber += 1
                                         println("Frame number: $frameNumber")

@@ -1,7 +1,5 @@
 package com.numq.encoder;
 
-import org.bytedeco.javacv.Frame;
-
 import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -18,7 +16,6 @@ public class AnimatedGifEncoder {
     protected int delay = 0; // frame delay (hundredths)
     protected boolean started = false; // ready to output frames
     protected OutputStream out;
-    protected Frame frame; // current frame
     protected byte[] pixels; // BGR byte array from frame
     protected byte[] indexedPixels; // converted frame indexed to palette
     protected int colorDepth; // number of bit planes
@@ -91,21 +88,30 @@ public class AnimatedGifEncoder {
      * frames.  If <code>setSize</code> was not invoked, the size of the
      * first image is used for all subsequent frames.
      *
-     * @param f Frame containing frame to write.
+     * @param buffer        ByteBuffer containing bgr bytes to write.
+     * @param imageWidth    int width > 0.
+     * @param imageHeight   int height > 0.
+     * @param imageChannels int channels > 0.
+     * @param imageStride   int stride > 0.
      * @return true if successful.
      */
-    public boolean addFrame(Frame f) {
-        if ((f == null) || !started) {
+    public boolean addFrame(ByteBuffer buffer, int imageWidth, int imageHeight, int imageChannels, int imageStride) {
+        if ((buffer == null) || !started) {
             return false;
         }
         boolean ok = true;
         try {
             if (!sizeSet) {
                 // use first frame's size
-                setSize(f.imageWidth, f.imageHeight);
+                setSize(imageWidth, imageHeight);
             }
-            frame = f;
-            getImagePixels(); // convert to correct format if necessary
+            getImagePixels(
+                    buffer,
+                    imageWidth,
+                    imageHeight,
+                    imageChannels,
+                    imageStride
+            ); // get BGR pixel bytes
             analyzePixels(); // build color table & map pixels
             if (firstFrame) {
                 writeLSD(); // logical screen descriptior
@@ -151,7 +157,6 @@ public class AnimatedGifEncoder {
         // reset for subsequent use
         transIndex = 0;
         out = null;
-        frame = null;
         pixels = null;
         indexedPixels = null;
         colorTab = null;
@@ -313,14 +318,7 @@ public class AnimatedGifEncoder {
     /**
      * Extracts image pixels into byte array "pixels"
      */
-    protected void getImagePixels() {
-        ByteBuffer buffer = (ByteBuffer) frame.image[0];
-
-        int stride = frame.imageStride;
-        int channels = frame.imageChannels;
-        int width = frame.imageWidth;
-        int height = frame.imageHeight;
-
+    protected void getImagePixels(ByteBuffer buffer, int width, int height, int channels, int stride) {
         pixels = new byte[width * height * channels];
 
         int pixelIndex = 0;
