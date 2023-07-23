@@ -6,6 +6,9 @@ import kotlinx.coroutines.flow.StateFlow
 
 expect object Collector {
     @Composable
+    fun <T> collectLatest(flow: Flow<T>): T?
+
+    @Composable
     fun <T> collect(flow: StateFlow<T>): T
 
     @Composable

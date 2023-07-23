@@ -7,9 +7,21 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.collectLatest
 
 actual object Collector {
+    @Composable
+    actual fun <T> collectLatest(flow: Flow<T>): T? {
+        val lifecycleOwner = LocalLifecycleOwner.current
+        val state = remember { mutableStateOf<T?>(null) }
+        LaunchedEffect(lifecycleOwner) {
+            flow.collectLatest { value ->
+                state.value = value
+            }
+        }
+        return state.value
+    }
+
     @Composable
     actual fun <T> collect(flow: StateFlow<T>) = collect(flow, flow.value) ?: flow.value
 

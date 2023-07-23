@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.numq.common.collector.Collector.collect
+import com.numq.common.collector.Collector.collectLatest
 import com.numq.common.format.SizeFormatter
 import com.numq.common.settings.Settings
 import com.numq.common.settings.SettingsColumn
@@ -31,7 +32,7 @@ fun SetupScreen(
     feature: SetupFeature,
     startProcessing: (Settings) -> Unit,
 ) {
-    when (val effect = collect(feature.effect)) {
+    when (val effect = collectLatest(feature.effect)) {
         is SetupEffect.StartProcessing -> startProcessing(effect.settings)
         else -> Unit
     }

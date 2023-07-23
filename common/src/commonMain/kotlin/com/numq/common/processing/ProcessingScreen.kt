@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.numq.common.collector.Collector.collect
+import com.numq.common.collector.Collector.collectLatest
 import com.numq.common.converter.ConversionStatus
 import com.numq.common.converter.ConverterException
 import com.numq.common.indicator.ProgressIndicator
@@ -27,7 +28,7 @@ fun ProcessingScreen(
     settings: Settings,
     close: () -> Unit,
 ) {
-    when (collect(feature.effect)) {
+    when (collectLatest(feature.effect)) {
         is ProcessingEffect.Close -> SideEffect { close() }
         else -> Unit
     }
