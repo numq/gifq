@@ -79,6 +79,7 @@ interface ConverterService {
                         (os.size() * grabber.lengthInVideoFrames).toLong()
                     }
                     grabber.stop()
+                    grabber.release()
                     finalSize
                 }
             }
@@ -136,6 +137,7 @@ interface ConverterService {
                             }
 
                             grabber.stop()
+                            grabber.release()
                             if (isActive && file.exists()) {
                                 send(ConversionStatus.Result(file.path))
                                 success = true
